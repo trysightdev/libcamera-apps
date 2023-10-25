@@ -8,12 +8,11 @@ OpenGL effects can be added in preview/egl_preview.cpp
 Setup
 -----
 ```bash
+sudo apt install -y python3-pip
 sudo apt install -y libcamera-dev libepoxy-dev libjpeg-dev libtiff5-dev
 sudo apt install -y cmake libboost-program-options-dev libdrm-dev libexif-dev
 sudo pip3 install ninja meson
-sudo apt-get install xserver-xorg
-sudo apt-get install xinit
-sudo apt-get install x11-xserver-utils
+sudo apt install -y xserver-xorg xinit x11-xserver-utils
 ```
 
 Build
