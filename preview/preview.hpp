@@ -37,6 +37,9 @@ public:
 	virtual bool Quit() { return false; }
 	// Return the maximum image size allowed.
 	virtual void MaxImageSize(unsigned int &w, unsigned int &h) const = 0;
+	virtual void cycleShader(int amount) {
+
+	}
 
 protected:
 	DoneCallback done_callback_;
@@ -44,3 +47,4 @@ protected:
 };
 
 Preview *make_preview(Options const *options);
+

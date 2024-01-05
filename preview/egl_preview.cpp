@@ -26,6 +26,46 @@
 #include <epoxy/egl.h>
 #include <epoxy/gl.h>
 
+#include <string>
+
+
+
+std::string SC_HEADER = "#extension GL_OES_EGL_image_external : enable\n"
+	"precision mediump float;\n" // Set the default precision to medium. 
+    "uniform samplerExternalOES s;\n" // The contrast lookup table.
+    "float u_ContrastA = 0.7;\n" // Subtracted Value
+    "float u_ContrastB = 0.2;\n" // Multiplied Value
+    "float u_ContrastC = 0.2;\n" // Added Value
+    "float contrast = 1.0;\n"
+    "varying vec2 texcoord;\n" // Interpolated texture coordinate per fragment.
+    "void main()\n" //The entry point for our fragment shader.
+    "{\n"
+    "gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n";
+
+std::string CONTRAST = "tempColor.rgb = ((tempColor.rgb - 0.5) * max(contrast, 0.0)) + 0.5;\n";
+std::string SC_GRAYSCALE_FORMULA = "   float grayScale = (tempColor.r * 0.299) + (tempColor.g * 0.587) + (tempColor.b *  0.114) ;\n";
+
+std::string SC_BLUE_ON_YELLOW =
+	SC_HEADER +
+    "	vec4 tempColor = texture2D(s, texcoord);\n" + // Sample the texture value
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);\n"
+    "	gl_FragColor = vec4(1.0-binarized,1.0-binarized,binarized,1);\n"
+    "}\n" +
+    "";
+
+std::string test = "#extension GL_OES_EGL_image_external : enable\n"
+					 	"precision mediump float;\n"
+						"uniform samplerExternalOES s;\n"
+					 	"varying vec2 texcoord;\n"
+						"float contrast = 10.0;\n"
+					 	"void main() {\n"
+						"  vec4 tempColor = texture2D(s, texcoord);\n" + // Sample the texture value
+						CONTRAST +
+					 	"  gl_FragColor = vec4(tempColor);\n"
+					 	"}\n";
+
 class EglPreview : public Preview
 {
 public:
@@ -46,6 +86,7 @@ public:
 		w = max_image_width_;
 		h = max_image_height_;
 	}
+	void cycleShader(int amount) override;
 
 private:
 	struct Buffer
@@ -75,6 +116,8 @@ private:
 	unsigned int max_image_width_;
 	unsigned int max_image_height_;
 };
+
+static int shaderIndex = 0;
 
 static GLint compile_shader(GLenum target, const char *source)
 {
@@ -130,6 +173,7 @@ static GLint link_program(GLint vs, GLint fs)
 	return prog;
 }
 
+static GLint vs_s;
 static void gl_setup(int width, int height, int window_width, int window_height)
 {
 	float w_factor = width / (float)window_width;
@@ -149,14 +193,22 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 			 "}\n",
 			 2.0 * w_factor, 2.0 * h_factor);
 	vs[sizeof(vs) - 1] = 0;
-	GLint vs_s = compile_shader(GL_VERTEX_SHADER, vs);
-	const char *fs = "#extension GL_OES_EGL_image_external : enable\n"
+	vs_s = compile_shader(GL_VERTEX_SHADER, vs);
+	std::cout << "SELECT SHADER " << shaderIndex << std::endl;
+	const char *fs;
+	if(shaderIndex == 0) {
+		fs = "#extension GL_OES_EGL_image_external : enable\n"
 					 "precision mediump float;\n"
 					 "uniform samplerExternalOES s;\n"
 					 "varying vec2 texcoord;\n"
 					 "void main() {\n"
-					 "  gl_FragColor = texture2D(s, texcoord);\n"
+					 "  gl_FragColor = vec4(1) - texture2D(s, texcoord);\n"
 					 "}\n";
+	}else {
+		//std::cout << std::string(SC_HEADER + SC_BLUE_ON_YELLOW).c_str() << std::endl;
+		fs = SC_BLUE_ON_YELLOW.c_str();
+	}
+	 
 	GLint fs_s = compile_shader(GL_FRAGMENT_SHADER, fs);
 	GLint prog = link_program(vs_s, fs_s);
 
@@ -338,6 +390,14 @@ void EglPreview::makeWindow(char const *name)
 	max_image_width_ = max_image_height_ = max_texture_size;
 	// This "undoes" the previous eglMakeCurrent.
 	eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+}
+
+void EglPreview::cycleShader(int amount) {
+	const int maxShaders = 5;
+	shaderIndex = (shaderIndex+amount) % maxShaders;
+	if(shaderIndex < 0) shaderIndex = maxShaders-1;
+
+	std::cout << SC_BLUE_ON_YELLOW << std::endl;
 }
 
 static void get_colour_space_info(std::optional<libcamera::ColorSpace> const &cs, EGLint &encoding, EGLint &range)

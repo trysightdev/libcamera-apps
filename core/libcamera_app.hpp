@@ -108,6 +108,10 @@ public:
 	void StartCamera();
 	void StopCamera();
 
+	void nextShader();
+	void prevShader();
+
+
 	Msg Wait();
 	void PostMessage(MsgType &t, MsgPayload &p);
 

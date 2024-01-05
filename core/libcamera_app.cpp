@@ -123,6 +123,22 @@ std::string LibcameraApp::CameraModel() const
 	return model ? *model : camera_->id();
 }
 
+void LibcameraApp::nextShader() {
+	std::cout << "Next Shader" << std::endl;
+	preview_->cycleShader(1);
+	preview_->Reset();
+	stopPreview();
+	startPreview();
+}
+
+void LibcameraApp::prevShader() {
+	std::cout << "Prev Shader" << std::endl;
+	preview_->cycleShader(-1);
+	preview_->Reset();
+	stopPreview();
+	startPreview();
+}
+
 void LibcameraApp::OpenCamera()
 {
 	// Make a preview window.

@@ -10,10 +10,11 @@ libcamera_vid = executable('libcamera-vid', files('libcamera_vid.cpp'),
                            link_with : libcamera_app,
                            install : true)
 
-libcamera_hello = executable('libcamera-hello', files('libcamera_hello.cpp'),
+libcamera_hello = executable('libcamera-hello', files('libcamera_hello.cpp', 'rotary_encoder.cpp'),
                              include_directories : include_directories('..'),
                              dependencies: libcamera_dep,
                              link_with : libcamera_app,
+			     link_args: ['-lpigpio', '-pthread'],
                              install : true)
 
 libcamera_raw = executable('libcamera-raw', files('libcamera_raw.cpp'),

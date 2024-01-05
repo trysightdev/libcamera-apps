@@ -10,9 +10,30 @@
 #include "core/libcamera_app.hpp"
 #include "core/options.hpp"
 
+#include <iostream>
+#include <unistd.h>
+#include <pigpio.h>
+#include "rotary_encoder.hpp"
+#include <thread>
+
 using namespace std::placeholders;
 
 // The main event loop for the application.
+static LibcameraApp app;
+static void callback(int way)
+{
+   static int pos = 0;
+
+   pos += way;
+
+   std::cout << "pos=" << pos << std::endl;
+   	if(way > 0) {
+		app.nextShader();
+   	}else {
+		app.prevShader();
+   }
+}
+
 
 static void event_loop(LibcameraApp &app)
 {
@@ -49,11 +70,23 @@ static void event_loop(LibcameraApp &app)
 	}
 }
 
-int main(int argc, char *argv[])
-{
+void gpio() {
+	std::cout << "Starting GPIO Thread" << std::endl;
+
+	if (gpioInitialise() < 0) return;
+	std::cout << "GPIO Thread init" << std::endl;
+   	re_decoder dec(7, 8, callback);
+ 
+   sleep(15000);
+   dec.re_cancel();
+   gpioTerminate();
+	std::cout << "Encoder finished" << std::endl;
+}
+
+int camera(int argc, char *argv[]) {
 	try
 	{
-		LibcameraApp app;
+		
 		Options *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{
@@ -69,4 +102,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	return 0;
+}
+
+int main(int argc, char *argv[])
+{
+	std::thread first (gpio);
+	std::thread second (camera, argc, argv);
+	first.join();
+	second.join();
 }
