@@ -2,12 +2,12 @@
 /*
  * Copyright (C) 2020, Raspberry Pi (Trading) Ltd.
  *
- * libcamera_encoder.cpp - libcamera video encoding class.
+ * rpicam_encoder.cpp - libcamera video encoding class.
  */
 
 #pragma once
 
-#include "core/libcamera_app.hpp"
+#include "core/rpicam_app.hpp"
 #include "core/stream_info.hpp"
 #include "core/video_options.hpp"
 
@@ -16,31 +16,30 @@
 typedef std::function<void(void *, size_t, int64_t, bool)> EncodeOutputReadyCallback;
 typedef std::function<void(libcamera::ControlList &)> MetadataReadyCallback;
 
-class LibcameraEncoder : public LibcameraApp
+class RPiCamEncoder : public RPiCamApp
 {
 public:
 	using Stream = libcamera::Stream;
 	using FrameBuffer = libcamera::FrameBuffer;
 
-	LibcameraEncoder() : LibcameraApp(std::make_unique<VideoOptions>()) {}
+	RPiCamEncoder() : RPiCamApp(std::make_unique<VideoOptions>()) {}
 
 	void StartEncoder()
 	{
 		createEncoder();
-		encoder_->SetInputDoneCallback(std::bind(&LibcameraEncoder::encodeBufferDone, this, std::placeholders::_1));
+		encoder_->SetInputDoneCallback(std::bind(&RPiCamEncoder::encodeBufferDone, this, std::placeholders::_1));
 		encoder_->SetOutputReadyCallback(encode_output_ready_callback_);
 	}
 	// This is callback when the encoder gives you the encoded output data.
 	void SetEncodeOutputReadyCallback(EncodeOutputReadyCallback callback) { encode_output_ready_callback_ = callback; }
 	void SetMetadataReadyCallback(MetadataReadyCallback callback) { metadata_ready_callback_ = callback; }
-	// Allow libcamera-vid to talk through to the encoder class. Allows Signal communication between the two
-	Encoder *GetEncoder() const { return encoder_.get(); }
 	void EncodeBuffer(CompletedRequestPtr &completed_request, Stream *stream)
 	{
 		assert(encoder_);
 		StreamInfo info = GetStreamInfo(stream);
 		FrameBuffer *buffer = completed_request->buffers[stream];
-		libcamera::Span span = Mmap(buffer)[0];
+		BufferReadSync r(this, buffer);
+		libcamera::Span span = r.Get()[0];
 		void *mem = span.data();
 		if (!buffer || !mem)
 			throw std::runtime_error("no buffer to encode");

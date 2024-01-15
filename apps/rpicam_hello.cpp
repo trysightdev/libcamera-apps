@@ -2,12 +2,12 @@
 /*
  * Copyright (C) 2020, Raspberry Pi (Trading) Ltd.
  *
- * libcamera_hello.cpp - libcamera "hello world" app.
+ * rpicam_hello.cpp - libcamera "hello world" app.
  */
 
 #include <chrono>
 
-#include "core/libcamera_app.hpp"
+#include "core/rpicam_app.hpp"
 #include "core/options.hpp"
 
 #include <iostream>
@@ -35,7 +35,7 @@ static void callback(int way)
 }
 
 
-static void event_loop(LibcameraApp &app)
+static void event_loop(RPiCamApp &app)
 {
 	Options const *options = app.GetOptions();
 
@@ -47,17 +47,17 @@ static void event_loop(LibcameraApp &app)
 
 	for (unsigned int count = 0; ; count++)
 	{
-		LibcameraApp::Msg msg = app.Wait();
-		if (msg.type == LibcameraApp::MsgType::Timeout)
+		RPiCamApp::Msg msg = app.Wait();
+		if (msg.type == RPiCamApp::MsgType::Timeout)
 		{
 			LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
 			app.StopCamera();
 			app.StartCamera();
 			continue;
 		}
-		if (msg.type == LibcameraApp::MsgType::Quit)
+		if (msg.type == RPiCamApp::MsgType::Quit)
 			return;
-		else if (msg.type != LibcameraApp::MsgType::RequestComplete)
+		else if (msg.type != RPiCamApp::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 
 		LOG(2, "Viewfinder frame " << count);
@@ -87,6 +87,7 @@ int camera(int argc, char *argv[]) {
 	try
 	{
 		
+		RPiCamApp app;
 		Options *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{

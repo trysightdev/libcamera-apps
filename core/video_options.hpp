@@ -89,11 +89,11 @@ struct VideoOptions : public Options
 			("bitrate,b", value<std::string>(&bitrate_)->default_value("0bps"),
 			 "Set the video bitrate for encoding. If no units are provided, default to bits/second.")
 			("profile", value<std::string>(&profile),
-			 "Set the encoding profile (h264 only)")
+			 "Set the encoding profile")
 			("level", value<std::string>(&level),
-			 "Set the encoding level (h264 only)")
+			 "Set the encoding level")
 			("intra,g", value<unsigned int>(&intra)->default_value(0),
-			 "Set the intra frame period (h264 only)")
+			 "Set the intra frame period")
 			("inline", value<bool>(&inline_headers)->default_value(false)->implicit_value(true),
 			 "Force PPS/SPS header with every I frame (h264 only)")
 			("codec", value<std::string>(&codec)->default_value("h264"),
@@ -116,8 +116,8 @@ struct VideoOptions : public Options
 			 "Use 'pause' to pause the recording at startup, otherwise 'record' (the default)")
 			("split", value<bool>(&split)->default_value(false)->implicit_value(true),
 			 "Create a new output file every time recording is paused and then resumed")
-			("segment", value<std::string>(&segment_)->default_value("0ms"),
-			 "Break the recording into files of approximately this duration (in milliseconds if no units provided)")
+			("segment", value<uint32_t>(&segment)->default_value(0),
+			 "Break the recording into files of approximately this many milliseconds")
 			("circular", value<size_t>(&circular)->default_value(0)->implicit_value(4),
 			 "Write output to a circular buffer of the given size (in MB) which is saved on exit")
 			("frames", value<unsigned int>(&frames)->default_value(0),
@@ -126,7 +126,13 @@ struct VideoOptions : public Options
 			("libav-video-codec", value<std::string>(&libav_video_codec)->default_value("h264_v4l2m2m"),
 			 "Sets the libav video codec to use. "
 			 "To list available codecs, run  the \"ffmpeg -codecs\" command.")
-			("libav-format", value<std::string>(&libav_format)->default_value(""),
+			("libav-video-codec-opts", value<std::string>(&libav_video_codec_opts),
+			 "Sets the libav video codec options to use. "
+			 "These override the internal defaults (check 'encoderOptions*()' in 'encoder/libav_encoder.cpp' for the defaults). "
+			 "Separate key and value with \"=\" and multiple options with \";\". "
+			 "e.g.: \"preset=ultrafast;profile=high;partitions=i8x8,i4x4\". "
+			 "To list available options for a given codec, run the \"ffmpeg -h encoder=libx264\" command for libx264.")
+			("libav-format", value<std::string>(&libav_format),
 			 "Sets the libav encoder output format to use. "
 			 "Leave blank to try and deduce this from the filename.\n"
 			 "To list available formats, run  the \"ffmpeg -formats\" command.")
@@ -164,6 +170,7 @@ struct VideoOptions : public Options
 	bool inline_headers;
 	std::string codec;
 	std::string libav_video_codec;
+	std::string libav_video_codec_opts;
 	std::string libav_format;
 	bool libav_audio;
 	std::string audio_codec;
@@ -181,7 +188,7 @@ struct VideoOptions : public Options
 	std::string initial;
 	bool pause;
 	bool split;
-	TimeVal<std::chrono::milliseconds> segment;
+	uint32_t segment;
 	size_t circular;
 	uint32_t frames;
 
@@ -190,11 +197,11 @@ struct VideoOptions : public Options
 		if (Options::Parse(argc, argv) == false)
 			return false;
 
-		av_sync.set(av_sync_);
 		bitrate.set(bitrate_);
+#if LIBAV_PRESENT
+		av_sync.set(av_sync_);
 		audio_bitrate.set(audio_bitrate_);
-		segment.set(segment_);
-
+#endif /* LIBAV_PRESENT */
 		if (width == 0)
 			width = 640;
 		if (height == 0)
@@ -222,7 +229,7 @@ struct VideoOptions : public Options
 
 		// From https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels
 		double mbps = ((width + 15) >> 4) * ((height + 15) >> 4) * framerate.value_or(DEFAULT_FRAMERATE);
-		if ((codec == "h264" || codec == "libav") && mbps > 245760.0)
+		if ((codec == "h264" || (codec == "libav" && libav_video_codec == "libx264")) && mbps > 245760.0)
 		{
 			LOG(1, "Overriding H.264 level 4.2");
 			level = "4.2";
@@ -245,13 +252,14 @@ struct VideoOptions : public Options
 		std::cerr << "    signal: " << signal << std::endl;
 		std::cerr << "    initial: " << initial << std::endl;
 		std::cerr << "    split: " << split << std::endl;
-		std::cerr << "    segment: " << segment.get() << "ms" << std::endl;
+		std::cerr << "    segment: " << segment << std::endl;
 		std::cerr << "    circular: " << circular << std::endl;
 	}
 
 private:
-	std::string av_sync_;
 	std::string bitrate_;
+#if LIBAV_PRESENT
+	std::string av_sync_;
 	std::string audio_bitrate_;
-	std::string segment_;
+#endif /* LIBAV_PRESENT */
 };

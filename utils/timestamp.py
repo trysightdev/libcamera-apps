@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 #
-# libcamera-apps timestamp analysis tool
+# rpicam-apps timestamp analysis tool
 # Copyright (C) 2021, Raspberry Pi Ltd.
 #
 import argparse
+import json
 import subprocess
 
 try:
@@ -21,12 +22,19 @@ def read_times_pts(file):
 
 
 def read_times_container(file):
-    cmd = ['ffprobe', file, '-hide_banner', '-select_streams', 'v', '-show_entries', 'frame=pts_time', '-of', 'csv=p=0']
+    cmd = ['ffprobe', file, '-hide_banner', '-select_streams', 'v', '-show_entries', 'frame', '-of', 'json']
     r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     if r.returncode:
         raise RuntimeError(f'ffprobe failed to run with command:\n{" ".join(cmd)}')
 
-    ts_list = [float(ts) * 1000 for ts in r.stdout.split('\n')[1:-1] if ts != '']
+    frame_data = json.loads(r.stdout)['frames']
+    keys = ['pkt_pts_time', 'pts_time', 'pkt_dts_time', 'dts_time']
+    key = [k for k in keys if k in frame_data[0].keys()]
+
+    if len(key) == 0:
+        raise RuntimeError(f'Timestamp keys not found in {file}')
+
+    ts_list = [float(f[key[0]]) * 1000 for f in frame_data]
     return ts_list
 
 
@@ -38,13 +46,16 @@ def outliers(diffs, frac, avg):
     return f'{sum(d < (1 - frac) * avg or d > (1 + frac) * avg for d in diffs)} ({frac * 100}%)'
 
 
-def plot_pts(diffs, avg, title):
+def plot_pts(diffs, avg, title, narrow):
     fig, ax = plt.subplots()
     ax.plot(diffs, label='Frame times')
     ax.plot([0, len(diffs)], [avg, avg], 'g--', label='Average')
     # Find an plot the max value
     max_val, idx = max((val, idx) for (idx, val) in enumerate(diffs))
     ax.plot([idx], [max_val], 'rx', label='Maximum')
+    if narrow:
+        cap = 2 * min(diffs)
+        max_val = max(val for val in diffs if val < cap)
     ax.axis([0, len(diffs), min(diffs) * 0.995, max_val * 1.005])
     ax.legend()
     plt.title(title)
@@ -55,10 +66,11 @@ def plot_pts(diffs, avg, title):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='libcamera-apps timestamp analysis tool')
-    parser.add_argument('filename', help='PTS file generated from libcamera-vid (with a .txt or .pts extension)'
+    parser = argparse.ArgumentParser(description='rpicam-apps timestamp analysis tool')
+    parser.add_argument('filename', help='PTS file generated from rpicam-vid (with a .txt or .pts extension)'
                                          ' or an avi/mkv/mp4 container file', type=str)
     parser.add_argument('--plot', help='Plot timestamp graph', action='store_true')
+    parser.add_argument('--narrow', help='Narrow the y-axis by hiding outliers', action='store_true')
     args = parser.parse_args()
 
     if args.filename.lower().endswith(('.txt', '.pts')):
@@ -80,6 +92,6 @@ if __name__ == '__main__':
 
     if args.plot:
         if plot_available:
-            plot_pts(diffs, avg, f'{args.filename}')
+            plot_pts(diffs, avg, f'{args.filename}', args.narrow)
         else:
             print('\nError: matplotlib is not installed, please install with "pip3 install matplotlib"')
