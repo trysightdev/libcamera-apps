@@ -12,7 +12,7 @@ project('rpicam-apps', 'c', 'cpp',
 
 meson.add_dist_script('utils' / 'gen-dist.sh')
 
-cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-faligned-new']
+cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wno-sign-compare', '-faligned-new']
 
 # Needed for file sizes > 32-bits.
 cpp_arguments += '-D_FILE_OFFSET_BITS=64'
@@ -51,6 +51,7 @@ subdir('post_processing_stages')
 subdir('utils')
 
 add_project_arguments(cpp_arguments, language : 'cpp')
+add_project_arguments(['-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wno-error=sign-compare'], language : 'c')
 
 rpicam_app = library(
     'rpicam_app',

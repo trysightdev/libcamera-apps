@@ -38,16 +38,22 @@ std::string SC_HEADER = "#extension GL_OES_EGL_image_external : enable\n"
     "float u_ContrastC = 0.2;\n" // Added Value
     "float contrast = 1.0;\n"
     "varying vec2 texcoord;\n" // Interpolated texture coordinate per fragment.
-    "void main()\n" //The entry point for our fragment shader.
-    "{\n"
-    "gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n";
+    "void main() {\n" //The entry point for our fragment shader.
+    "    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+	"	 vec4 tempColor = texture2D(s, texcoord);\n"; // Sample the texture value
+    
 
 std::string CONTRAST = "tempColor.rgb = ((tempColor.rgb - 0.5) * max(contrast, 0.0)) + 0.5;\n";
 std::string SC_GRAYSCALE_FORMULA = "   float grayScale = (tempColor.r * 0.299) + (tempColor.g * 0.587) + (tempColor.b *  0.114) ;\n";
 
+std::string SC_ORIGINAL =
+    SC_HEADER +
+	"	gl_FragColor = tempColor;	" +
+    "}" +
+    "";
+
 std::string SC_BLUE_ON_YELLOW =
 	SC_HEADER +
-    "	vec4 tempColor = texture2D(s, texcoord);\n" + // Sample the texture value
     CONTRAST +
     SC_GRAYSCALE_FORMULA +
     "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);\n"
@@ -55,16 +61,76 @@ std::string SC_BLUE_ON_YELLOW =
     "}\n" +
     "";
 
-std::string test = "#extension GL_OES_EGL_image_external : enable\n"
-					 	"precision mediump float;\n"
-						"uniform samplerExternalOES s;\n"
-					 	"varying vec2 texcoord;\n"
-						"float contrast = 10.0;\n"
-					 	"void main() {\n"
-						"  vec4 tempColor = texture2D(s, texcoord);\n" + // Sample the texture value
-						CONTRAST +
-					 	"  gl_FragColor = vec4(tempColor);\n"
-					 	"}\n";
+std::string SC_YELLOW_ON_BLUE =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(binarized,binarized,1.0-binarized,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_BLACK_ON_WHITE =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(binarized,binarized,binarized,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_WHITE_ON_BLACK =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(1.0-binarized,1.0-binarized,1.0-binarized,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_BLACK_ON_YELLOW =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(binarized,binarized,0.0,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_YELLOW_ON_BLACK =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(1.0-binarized,1.0-binarized,0.0,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_BLACK_ON_GREEN =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(0.0,binarized,0.0,1);" + // R,G,B
+    "}" +
+    "";
+
+std::string SC_GREEN_ON_BLACK =
+    SC_HEADER +
+    CONTRAST +
+    SC_GRAYSCALE_FORMULA +
+    "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);" +
+    "	gl_FragColor = vec4(0.0,1.0-binarized,0.0,1);" + // R,G,B
+    "}" +
+    "";
+
+const uint NUM_SHADERS = 9;
+std::string shaders[NUM_SHADERS] = { 
+	SC_ORIGINAL, SC_BLUE_ON_YELLOW, SC_YELLOW_ON_BLUE, 
+	SC_BLACK_ON_WHITE, SC_WHITE_ON_BLACK, SC_BLACK_ON_YELLOW, 
+	SC_YELLOW_ON_BLACK, SC_BLACK_ON_GREEN, SC_GREEN_ON_BLACK
+};
+
 
 class EglPreview : public Preview
 {
@@ -87,6 +153,7 @@ public:
 		h = max_image_height_;
 	}
 	void cycleShader(int amount) override;
+	void swapOriginalAndActiveShader() override;
 
 private:
 	struct Buffer
@@ -117,6 +184,8 @@ private:
 	unsigned int max_image_height_;
 };
 
+
+static int lastShaderIndex = 0;
 static int shaderIndex = 0;
 
 static GLint compile_shader(GLenum target, const char *source)
@@ -196,18 +265,8 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	vs_s = compile_shader(GL_VERTEX_SHADER, vs);
 	std::cout << "SELECT SHADER " << shaderIndex << std::endl;
 	const char *fs;
-	if(shaderIndex == 0) {
-		fs = "#extension GL_OES_EGL_image_external : enable\n"
-					 "precision mediump float;\n"
-					 "uniform samplerExternalOES s;\n"
-					 "varying vec2 texcoord;\n"
-					 "void main() {\n"
-					 "  gl_FragColor = vec4(1) - texture2D(s, texcoord);\n"
-					 "}\n";
-	}else {
-		//std::cout << std::string(SC_HEADER + SC_BLUE_ON_YELLOW).c_str() << std::endl;
-		fs = SC_BLUE_ON_YELLOW.c_str();
-	}
+	fs = shaders[shaderIndex].c_str();
+
 	 
 	GLint fs_s = compile_shader(GL_FRAGMENT_SHADER, fs);
 	GLint prog = link_program(vs_s, fs_s);
@@ -393,11 +452,20 @@ void EglPreview::makeWindow(char const *name)
 }
 
 void EglPreview::cycleShader(int amount) {
-	const int maxShaders = 5;
-	shaderIndex = (shaderIndex+amount) % maxShaders;
-	if(shaderIndex < 0) shaderIndex = maxShaders-1;
+	if(shaderIndex == 0 && amount < 0) {
+		shaderIndex = NUM_SHADERS - 1;
+	}else{
+		shaderIndex = (shaderIndex+amount) % NUM_SHADERS;
+	}
+}
 
-	std::cout << SC_BLUE_ON_YELLOW << std::endl;
+void EglPreview::swapOriginalAndActiveShader() {
+	if(shaderIndex != 0) {
+		lastShaderIndex = shaderIndex;
+		shaderIndex = 0;
+	} else {
+		shaderIndex = lastShaderIndex;
+	}
 }
 
 static void get_colour_space_info(std::optional<libcamera::ColorSpace> const &cs, EGLint &encoding, EGLint &range)

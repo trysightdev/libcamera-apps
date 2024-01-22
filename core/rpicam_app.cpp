@@ -190,6 +190,16 @@ void RPiCamApp::prevShader() {
 	startPreview();
 }
 
+int lastShader = -1;
+void RPiCamApp::swapOriginalAndActiveShader() {
+	std::cout << "Swap Shader" << std::endl;
+
+	preview_->swapOriginalAndActiveShader();
+	preview_->Reset();
+	stopPreview();
+	startPreview();
+}
+
 void RPiCamApp::OpenCamera()
 {
 	// Make a preview window.

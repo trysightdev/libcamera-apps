@@ -143,6 +143,7 @@ public:
 
 	void nextShader();
 	void prevShader();
+	void swapOriginalAndActiveShader();
 
 
 	Msg Wait();

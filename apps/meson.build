@@ -11,11 +11,11 @@ rpicam_vid = executable('rpicam-vid', files('rpicam_vid.cpp'),
                         install : true)
 
 			     
-rpicam_hello = executable('rpicam-hello', files('rpicam_hello.cpp', 'rotary_encoder.cpp'),
+rpicam_hello = executable('rpicam-hello', files('rpicam_hello.cpp', 'rotary_encoder.cpp', 'RED.cpp'),
                           include_directories : include_directories('..'),
                           dependencies: libcamera_dep,
                           link_with : rpicam_app,
-                          link_args: ['-lpigpio', '-pthread'],
+                          link_args: ['-lpigpio', '-pthread', '-lpigpiod_if2'],
                           install : true)
 
 rpicam_raw = executable('rpicam-raw', files('rpicam_raw.cpp'),

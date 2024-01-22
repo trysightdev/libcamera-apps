@@ -40,6 +40,9 @@ public:
 	virtual void cycleShader(int amount) {
 
 	}
+	virtual void swapOriginalAndActiveShader() {
+
+	}
 
 protected:
 	DoneCallback done_callback_;
