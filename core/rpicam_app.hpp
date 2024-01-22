@@ -143,7 +143,9 @@ public:
 
 	void nextShader();
 	void prevShader();
-
+	void swapOriginalAndActiveShader();
+	void drawText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 255, float g = 255, float b = 255, float opacity = 1);
+	void SetTextDrawCallback(std::function<void()> func);
 
 	Msg Wait();
 	void PostMessage(MsgType &t, MsgPayload &p);

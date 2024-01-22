@@ -5,6 +5,17 @@ Do not update to latest libcamera-apps, their main branch can be broken sometime
 This project uses xserver and creates a xwindow with an eGL display using openGL.
 OpenGL effects can be added in preview/egl_preview.cpp
 
+Before setting up this program we need to install FreeType to render text to OpenGL
+
+```bash
+git clone https://git.savannah.nongnu.org/git/freetype/freetype2.git
+cd freetype2
+mkdir build && cd build
+cmake ..      # generates Makefile + deactivates HarfBuzz if not found
+make          # compile libs
+make install  # install libs & headers
+```
+
 Setup
 -----
 ```bash

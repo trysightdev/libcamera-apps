@@ -177,19 +177,28 @@ std::string RPiCamApp::CameraModel() const
 void RPiCamApp::nextShader() {
 	std::cout << "Next Shader" << std::endl;
 	preview_->cycleShader(1);
-	preview_->Reset();
-	stopPreview();
-	startPreview();
 }
 
 void RPiCamApp::prevShader() {
 	std::cout << "Prev Shader" << std::endl;
 	preview_->cycleShader(-1);
-	preview_->Reset();
-	stopPreview();
-	startPreview();
 }
 
+int lastShader = -1;
+void RPiCamApp::swapOriginalAndActiveShader() {
+	std::cout << "Swap Shader" << std::endl;
+
+	preview_->swapOriginalAndActiveShader();
+}
+
+void RPiCamApp::drawText(std::string text, float x, float y, float scale, float r, float g, float b, float opacity) {
+	preview_->glRenderText( text, x, y, scale, r, g, b, opacity);
+}
+
+void RPiCamApp::SetTextDrawCallback(std::function<void()> func) {
+	preview_->SetTextDrawCallback(func);
+}
+	
 void RPiCamApp::OpenCamera()
 {
 	// Make a preview window.

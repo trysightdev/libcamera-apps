@@ -8,6 +8,7 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 #include <string>
 
 #include <libcamera/base/span.h>
@@ -26,6 +27,9 @@ public:
 	// This is where the application sets the callback it gets whenever the viewfinder
 	// is no longer displaying the buffer and it can be safely recycled.
 	void SetDoneCallback(DoneCallback callback) { done_callback_ = callback; }
+	void SetTextDrawCallback(std::function<void()> callback) { textDrawCallback = callback; }
+	
+	std::function<void()> textDrawCallback;
 	virtual void SetInfoText(const std::string &text) {}
 	// Display the buffer. You get given the fd back in the BufferDoneCallback
 	// once its available for re-use.
@@ -40,6 +44,10 @@ public:
 	virtual void cycleShader(int amount) {
 
 	}
+	virtual void swapOriginalAndActiveShader() {
+
+	}
+	virtual void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 255, float g = 255, float b = 255, float opacity = 1) {}
 
 protected:
 	DoneCallback done_callback_;

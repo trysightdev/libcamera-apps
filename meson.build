@@ -12,7 +12,7 @@ project('rpicam-apps', 'c', 'cpp',
 
 meson.add_dist_script('utils' / 'gen-dist.sh')
 
-cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-faligned-new']
+cpp_arguments = ['-pedantic', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wno-sign-compare', '-faligned-new']
 
 # Needed for file sizes > 32-bits.
 cpp_arguments += '-D_FILE_OFFSET_BITS=64'
@@ -32,6 +32,7 @@ elif neon == 'armv8-neon'
 endif
 
 libcamera_dep = dependency('libcamera', required : true)
+freetype2_dep = dependency('freetype2', required : true)
 
 summary({
             'location' : libcamera_dep.get_variable('libdir'),
@@ -40,7 +41,7 @@ summary({
         section : 'libcamera')
 
 rpicam_app_src = []
-rpicam_app_dep = [libcamera_dep]
+rpicam_app_dep = [libcamera_dep, freetype2_dep]
 
 subdir('core')
 subdir('encoder')
@@ -51,6 +52,7 @@ subdir('post_processing_stages')
 subdir('utils')
 
 add_project_arguments(cpp_arguments, language : 'cpp')
+add_project_arguments(['-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wno-error=sign-compare'], language : 'c')
 
 rpicam_app = library(
     'rpicam_app',
