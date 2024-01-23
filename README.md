@@ -42,3 +42,6 @@ Run
 cd build/apps
 sudo xinit ./libcamera-hello -t 0 -f
 ```
+Use rpi-config to disable blanking and use splash screen.
+
+
