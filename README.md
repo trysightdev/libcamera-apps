@@ -1,5 +1,5 @@
 # libcamera-apps - HDMI OpenGL Display
-Tested on Raspberry Pi 4, 64 bit OS Lite
+Tested on Raspberry Pi 4, 32 bit Bookworm OS Lite
 
 Do not update to latest libcamera-apps, their main branch can be broken sometimes.
 This project uses xserver and creates a xwindow with an eGL display using openGL.
@@ -8,7 +8,9 @@ OpenGL effects can be added in preview/egl_preview.cpp
 Before setting up this program we need to install FreeType to render text to OpenGL
 
 ```bash
-git clone https://git.savannah.nongnu.org/git/freetype/freetype2.git
+wget http://download.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.gz
+tar -xvzf freetype-2.13.2.tar.gz
+
 cd freetype2
 mkdir build && cd build
 cmake ..      # generates Makefile + deactivates HarfBuzz if not found
@@ -19,6 +21,7 @@ make install  # install libs & headers
 Setup
 -----
 ```bash
+sudp apt install pigpio pigpiod
 sudo apt install -y python3-pip
 sudo apt install -y libcamera-dev libepoxy-dev libjpeg-dev libtiff5-dev libegl1-mesa-dev
 sudo apt install -y cmake libboost-program-options-dev libdrm-dev libexif-dev
