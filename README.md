@@ -15,7 +15,7 @@ cd freetype2
 mkdir build && cd build
 cmake ..      # generates Makefile + deactivates HarfBuzz if not found
 make          # compile libs
-make install  # install libs & headers
+sudo make install  # install libs & headers
 ```
 
 Setup
