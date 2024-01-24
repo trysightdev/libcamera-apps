@@ -23,6 +23,8 @@ make          # compile libs
 sudo make install  # install libs & headers
 cd ../..
 
+sudo pip3 install ninja meson --break-system-packages
+
 
 
 echo "Installation complete."
