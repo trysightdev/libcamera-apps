@@ -27,13 +27,13 @@
 #include <cmath>
 
 
-const int ENCODER1_A = 26;
-const int ENCODER1_B = 19;
-const int ENCODER1_SW = 13;
+const int ENCODER2_A = 26;
+const int ENCODER2_B = 19;
+const int ENCODER2_SW = 13;
 
-const int ENCODER2_A = 10;
-const int ENCODER2_B = 22;
-const int ENCODER2_SW = 27;
+const int ENCODER1_A = 10;
+const int ENCODER1_B = 22;
+const int ENCODER1_SW = 27;
 
 using namespace std::placeholders;
 
