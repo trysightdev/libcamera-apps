@@ -44,7 +44,8 @@ Run
 -----
 ```bash
 cd build/apps
-sudo xinit ./libcamera-hello -t 0 -f
+sudo pigpiod
+sudo xinit ./rpicam-hello -t 0 -f
 ```
 Use rpi-config to disable blanking and use splash screen.
 Boot config.txt set hdmi 2 for the new monitor.
