@@ -32,6 +32,9 @@ sudo apt install -y xserver-xorg xinit x11-xserver-utils
 Build
 -----
 ```bash
+cd ~/
+git clone https://github.com/trysightdev/libcamera-apps.git
+cd libcamera-apps
 meson setup build -Denable_libav=false -Denable_drm=false -Denable_egl=true -Denable_qt=false -Denable_opencv=false -Denable_tflite=false
 meson compile -C build -j4
 ```
