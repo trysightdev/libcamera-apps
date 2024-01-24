@@ -12,6 +12,7 @@ Public Domain
 #include "RED.hpp"
 
 /* PRIVATE ---------------------------------------------------------------- */
+const int STEPS = 2;
 
 struct _RED_s
 {
@@ -74,7 +75,7 @@ static void _cb(
       {
          self->oldState = newState;
 
-         detent = self->step / 4;
+         detent = self->step / STEPS;
 
          self->step += inc;
 
@@ -82,7 +83,7 @@ static void _cb(
          {
             if (self->mode == RED_MODE_DETENT)
             {
-               if (detent != (self->step / 4)) (self->cb)(self->step / 4);
+               if (detent != (self->step / STEPS)) (self->cb)(self->step / STEPS);
             }
             else (self->cb)(self->step);
          }
@@ -158,7 +159,7 @@ void RED_cancel(RED_t *self)
 void RED_set_position(RED_t *self, int position)
 {
    if (self->mode == RED_MODE_DETENT)
-      self->step = position * 4;
+      self->step = position * STEPS;
    else
       self->step = position;
 }
@@ -166,7 +167,7 @@ void RED_set_position(RED_t *self, int position)
 int RED_get_position(RED_t *self)
 {
    if (self->mode == RED_MODE_DETENT)
-      return self->step / 4;
+      return self->step / STEPS;
    else
       return self->step;
 }
