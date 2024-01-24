@@ -35,6 +35,10 @@ const int ENCODER1_A = 10;
 const int ENCODER1_B = 22;
 const int ENCODER1_SW = 27;
 
+static float contrastA = 0.7;
+static float contrastB = 0.2;
+static float contrastC = 0.2;
+
 using namespace std::placeholders;
 
 // The main event loop for the application.
@@ -53,8 +57,18 @@ static int pi;
 
 auto lastAutofocusTextDraw = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 auto lastZoomTextDraw = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+auto lastShaderButtonPress = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 
 static bool autofocusLocked = false;
+static bool shaderButtonHeld = false;
+
+
+static float clamp(float num, float min, float max) {
+	if(num > max) return max;
+	if(num < min) return min;
+	return num;
+}
+
 static void toggleAutofocus() {
 	libcamera::ControlList controls;
 
@@ -79,7 +93,12 @@ static void setZoom() {
 	libcamera::Point centerDiff = libcamera::Point(maxCenter.x - zoomCenter.x, maxCenter.y - zoomCenter.y);
 	scaledRectangle.translateBy(centerDiff);
 
+	libcamera::Rectangle afwindows_rectangle[1];
+	afwindows_rectangle[0] = scaledRectangle;
+
 	libcamera::ControlList controls;
+	controls.set(controls::AfMetering, controls::AfMeteringWindows);
+	controls.set(controls::AfWindows, afwindows_rectangle);
 	controls.set(libcamera::controls::ScalerCrop, scaledRectangle);
  
 	app.SetControls(controls);
@@ -92,11 +111,24 @@ static void shaderRotaryCallback(int newPos) {
    	static int pos = 0;
    	int direction = pos - newPos;
 
-   	if(direction > 0) {
-		app.nextShader();
-   	} else {
-		app.prevShader();
-   	}
+	if(shaderButtonHeld) {
+		if(direction > 0) {
+			contrastA += 0.1; 
+		} else {
+			contrastA -= 0.1; 
+		}
+		contrastA = clamp(contrastA, 0.0, 1.0);
+		contrastB = clamp(contrastB, 0.0, 1.0);
+		contrastC = clamp(contrastC, 0.0, 1.0);
+		app.setShaderValues(contrastA, contrastB, contrastC);
+	} else {
+		if(direction > 0) {
+			app.nextShader();
+		} else {
+			app.prevShader();
+		}
+	}
+
 	pos = newPos;
 }
 
@@ -238,6 +270,11 @@ void buttonCallbacks() {
 
 	callback(pi, ENCODER1_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Up 1" << std::endl;
+		shaderButtonHeld = false;
+
+		if(getTimeDiff(lastShaderButtonPress) < 560) { 
+			app.swapOriginalAndActiveShader();
+		}
 	});
 
 	callback(pi, ENCODER2_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
@@ -247,16 +284,12 @@ void buttonCallbacks() {
 	
 	callback(pi, ENCODER1_SW, FALLING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Down 1" << std::endl;
-		app.swapOriginalAndActiveShader();
+		shaderButtonHeld = true;
+		lastShaderButtonPress = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 	});
 
 	callback(pi, ENCODER2_SW, FALLING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Down 2" << std::endl;
-		/*
-		zoom = 1;
-		setZoom();
-		*/
-
 		toggleAutofocus();
 	});
 }
@@ -264,8 +297,6 @@ void buttonCallbacks() {
 int camera(int argc, char *argv[]) {
 	try
 	{
-		
-
 		Options *options = app.GetOptions();
 		if (options->Parse(argc, argv))
 		{
