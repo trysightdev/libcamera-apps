@@ -37,9 +37,12 @@ std::string SC_MEGASHADER = "#extension GL_OES_EGL_image_external : enable\n"
 	"precision mediump float;\n" // Set the default precision to medium. 
     "uniform samplerExternalOES s;\n" // The contrast lookup table.
 	"uniform float shaderIndex;\n"
-    "float u_ContrastA = 0.7;\n" // Subtracted Value
-    "float u_ContrastB = 0.2;\n" // Multiplied Value
-    "float u_ContrastC = 0.2;\n" // Added Value
+	"uniform float u_ContrastA;\n"
+	"uniform float u_ContrastB;\n"
+	"uniform float u_ContrastC;\n"
+    //"float u_ContrastA = 0.7;\n" // Subtracted Value
+    //"float u_ContrastB = 0.2;\n" // Multiplied Value
+    //"float u_ContrastC = 0.2;\n" // Added Value
     "float contrast = 1.0;\n"
     "varying vec2 texcoord;\n" // Interpolated texture coordinate per fragment.
     "void main() {\n" //The entry point for our fragment shader.
@@ -114,6 +117,7 @@ public:
 	void cycleShader(int amount) override;
 	void swapOriginalAndActiveShader() override;
 	void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 1, float g = 1, float b = 1, float opacity = 1) override;
+	void setShaderValues(float a, float b, float c);
 
 private:
 	struct Buffer
@@ -275,6 +279,7 @@ static void loadFont() {
 }
 
 static GLint shaderIndexLocation;
+static GLint contrastALocation, contrastBLocation, contrastCLocation;
 static void gl_setup(int width, int height, int window_width, int window_height)
 {
 	glEnable(GL_BLEND);
@@ -311,6 +316,9 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	glUseProgram(prog);
 
 	
+	contrastALocation = glGetUniformLocation(prog, "u_ContrastA");
+	contrastBLocation = glGetUniformLocation(prog, "u_ContrastB");
+	contrastCLocation = glGetUniformLocation(prog, "u_ContrastC");
 	shaderIndexLocation = glGetUniformLocation(prog, "shaderIndex");
 
 	glGenVertexArrays(1, &VAO);
@@ -356,6 +364,15 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	glUseProgram(textShader);
 	glGenVertexArrays(1, &textVAO);
 	loadFont();
+}
+
+static float contrastA = 0.7;
+static float contrastB = 0.2;
+static float contrastC = 0.2;
+void EglPreview::setShaderValues(float a, float b, float c) {
+	contrastA = a;
+	contrastB = b;
+	contrastC = c;
 }
 
 void EglPreview::glRenderText(std::string text, float x, float y, float scale, float r, float g, float b, float opacity) {
@@ -675,6 +692,10 @@ void EglPreview::Show(int fd, libcamera::Span<uint8_t> span, StreamInfo const &i
 	if (buffer.fd == -1)
 		makeBuffer(fd, span.size(), info, buffer);
 
+
+	glUniform1f(contrastALocation, contrastA);
+	glUniform1f(contrastBLocation, contrastB);
+	glUniform1f(contrastCLocation, contrastC);
 
 	glUniform1f(shaderIndexLocation, shaderIndex);
 
