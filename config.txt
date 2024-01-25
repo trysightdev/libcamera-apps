@@ -47,3 +47,4 @@ otg_mode=1
 hdmi_group=2
 #hdmi_mode=16
 dtoverlay=imx708,cam0
+disable_splash=1
