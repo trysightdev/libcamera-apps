@@ -120,7 +120,6 @@ static void shaderRotaryCallback(int newPos) {
 		contrastC = clamp(contrastC, 0.0, 1.0);
 		contrastB = clamp(contrastB, 0.0, 1.0);
 		contrastA = clamp(contrastA, contrastB+0.01, 1.0);
-		std::cout << contrastA << " " <<  contrastB << " " << contrastC << std::endl;
 		app.setShaderValues(contrastA, contrastB, contrastC);
 	} else {
 		if(direction > 0) {
