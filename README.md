@@ -50,4 +50,13 @@ sudo xinit ./build/apps/rpicam-hello -t 0 -f
 Use rpi-config to disable blanking and use splash screen.
 Boot config.txt set hdmi 2 for the new monitor.
 
-
+Splash Screen
+-----
+```
+sudo apt -y install rpd-plym-splash
+sudo mv ~/trysight_splash.png /usr/share/plymouth/themes/pix/splash.png
+sudo update-initramfs -u
+```
+Install plymouth
+Move the trysight_splash.png from this repo to the directory
+Rebuild the boot image to use the updated splash.png
