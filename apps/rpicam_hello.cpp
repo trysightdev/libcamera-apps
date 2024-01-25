@@ -38,6 +38,7 @@ const int ENCODER1_SW = 27;
 static float contrastA = 0.7;
 static float contrastB = 0.2;
 static float contrastC = 0.2;
+static float contrast = 1.8;
 
 using namespace std::placeholders;
 
@@ -120,7 +121,10 @@ static void shaderRotaryCallback(int newPos) {
 		contrastC = clamp(contrastC, 0.0, 1.0);
 		contrastB = clamp(contrastB, 0.0, 1.0);
 		contrastA = clamp(contrastA, contrastB+0.01, 1.0);
-		app.setShaderValues(contrastA, contrastB, contrastC);
+
+		contrast = clamp(contrast, 0.0, 1.0);
+		std::cout << contrastA << " " <<  contrastB << " " << contrastC << std::endl;
+		app.setShaderValues(contrastA, contrastB, contrastC, contrast);
 	} else {
 		if(direction > 0) {
 			app.nextShader();
@@ -216,7 +220,7 @@ static void event_loop(RPiCamApp &app) {
 	app.OpenCamera();
 	app.ConfigureViewfinder();
 	app.StartCamera();
-
+	app.setShaderValues(contrastA, contrastB, contrastC, contrast);
 	app.SetTextDrawCallback(onDraw);
 	libcamera::ControlList properties = app.GetProperties();
 	scalerCropMaximum = *properties.get(libcamera::properties::ScalerCropMaximum);

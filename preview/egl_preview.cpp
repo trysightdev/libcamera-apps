@@ -33,6 +33,12 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H 
 
+
+static float contrastA = 0.7;
+static float contrastB = 0.2;
+static float contrastC = 0.2;
+static float contrast = 1.0;
+
 std::string SC_MEGASHADER = "#extension GL_OES_EGL_image_external : enable\n"
 	"precision mediump float;\n" // Set the default precision to medium. 
     "uniform samplerExternalOES s;\n" // The contrast lookup table.
@@ -43,12 +49,12 @@ std::string SC_MEGASHADER = "#extension GL_OES_EGL_image_external : enable\n"
     //"float u_ContrastA = 0.7;\n" // Subtracted Value
     //"float u_ContrastB = 0.2;\n" // Multiplied Value
     //"float u_ContrastC = 0.2;\n" // Added Value
-    "float contrast = 1.0;\n"
+    "uniform float u_Contrast;\n"
     "varying vec2 texcoord;\n" // Interpolated texture coordinate per fragment.
     "void main() {\n" //The entry point for our fragment shader.
     "   gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
 	"	vec4 tempColor = texture2D(s, texcoord);\n" // Sample the texture value
-	"	tempColor.rgb = ((tempColor.rgb - 0.5) * max(contrast, 0.0)) + 0.5;\n"
+	"	tempColor.rgb = ((tempColor.rgb - 0.5) * max(u_Contrast, 0.0)) + 0.5;\n"
 	"   float grayScale = (tempColor.r * 0.299) + (tempColor.g * 0.587) + (tempColor.b *  0.114) ;\n"
     "   float binarized = smoothstep(u_ContrastA,u_ContrastB,grayScale);"
 	""
@@ -69,7 +75,9 @@ std::string SC_MEGASHADER = "#extension GL_OES_EGL_image_external : enable\n"
 	"	} else if(shaderIndex == 8.0) {"
     "		gl_FragColor = vec4(0.0,1.0-binarized,0.0,1);" // GREEN_ON_BLACK
     "	} else {"
-	"		gl_FragColor = tempColor;"
+	"		gl_FragColor.x = (tempColor.x - u_ContrastC) * 1.50 + u_ContrastC;"
+    "		gl_FragColor.y = (tempColor.y - u_ContrastC) * 1.50 + u_ContrastC;" 
+    "		gl_FragColor.z = (tempColor.z - u_ContrastC) * 1.50 + u_ContrastC;"
 	"	}"
     "}"
     "";
@@ -117,7 +125,7 @@ public:
 	void cycleShader(int amount) override;
 	void swapOriginalAndActiveShader() override;
 	void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 1, float g = 1, float b = 1, float opacity = 1) override;
-	void setShaderValues(float a, float b, float c);
+	void setShaderValues(float a, float b, float c, float d);
 
 private:
 	struct Buffer
@@ -279,7 +287,7 @@ static void loadFont() {
 }
 
 static GLint shaderIndexLocation;
-static GLint contrastALocation, contrastBLocation, contrastCLocation;
+static GLint contrastALocation, contrastBLocation, contrastCLocation, contrastLocation;
 static void gl_setup(int width, int height, int window_width, int window_height)
 {
 	glEnable(GL_BLEND);
@@ -319,7 +327,12 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	contrastALocation = glGetUniformLocation(prog, "u_ContrastA");
 	contrastBLocation = glGetUniformLocation(prog, "u_ContrastB");
 	contrastCLocation = glGetUniformLocation(prog, "u_ContrastC");
+	contrastLocation = glGetUniformLocation(prog, "u_Contrast");
 	shaderIndexLocation = glGetUniformLocation(prog, "shaderIndex");
+	glUniform1f(contrastALocation, contrastA);
+	glUniform1f(contrastBLocation, contrastB);
+	glUniform1f(contrastCLocation, contrastC);
+	glUniform1f(contrastLocation, contrast);
 
 	glGenVertexArrays(1, &VAO);
 
@@ -366,13 +379,11 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	loadFont();
 }
 
-static float contrastA = 0.7;
-static float contrastB = 0.2;
-static float contrastC = 0.2;
-void EglPreview::setShaderValues(float a, float b, float c) {
+void EglPreview::setShaderValues(float a, float b, float c, float d) {
 	contrastA = a;
 	contrastB = b;
 	contrastC = c;
+	contrast = d;
 }
 
 void EglPreview::glRenderText(std::string text, float x, float y, float scale, float r, float g, float b, float opacity) {
@@ -696,6 +707,7 @@ void EglPreview::Show(int fd, libcamera::Span<uint8_t> span, StreamInfo const &i
 	glUniform1f(contrastALocation, contrastA);
 	glUniform1f(contrastBLocation, contrastB);
 	glUniform1f(contrastCLocation, contrastC);
+	glUniform1f(contrastLocation, contrast);
 
 	glUniform1f(shaderIndexLocation, shaderIndex);
 

@@ -48,7 +48,7 @@ public:
 
 	}
 	virtual void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 255, float g = 255, float b = 255, float opacity = 1) {}
-	virtual void setShaderValues(float a, float b, float c) {}
+	virtual void setShaderValues(float a, float b, float c, float d) {}
 
 protected:
 	DoneCallback done_callback_;

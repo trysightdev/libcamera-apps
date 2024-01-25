@@ -191,8 +191,8 @@ void RPiCamApp::swapOriginalAndActiveShader() {
 	preview_->swapOriginalAndActiveShader();
 }
 
-void RPiCamApp::setShaderValues(float a, float b, float c) {
-	preview_->setShaderValues(a, b, c);
+void RPiCamApp::setShaderValues(float a, float b, float c, float contrast) {
+	preview_->setShaderValues(a, b, c, contrast);
 }
 
 void RPiCamApp::drawText(std::string text, float x, float y, float scale, float r, float g, float b, float opacity) {
