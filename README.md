@@ -60,3 +60,6 @@ sudo update-initramfs -u
 Install plymouth
 Move the trysight_splash.png from this repo to the directory
 Rebuild the boot image to use the updated splash.png
+
+## Known Issues
+* During demo RPI didn't load up, not sure why
