@@ -25,6 +25,8 @@
 
 #include "RED.hpp"
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 
 const int ENCODER2_A = 26;
@@ -38,7 +40,7 @@ const int ENCODER1_SW = 27;
 static float contrastA = 0.7;
 static float contrastB = 0.2;
 static float contrastC = 0.2;
-static float contrast = 1.8;
+static float contrast = 1.0;
 
 using namespace std::placeholders;
 
@@ -59,10 +61,47 @@ static int pi;
 auto lastAutofocusTextDraw = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 auto lastZoomTextDraw = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 auto lastShaderButtonPress = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+auto lastZoomButtonPress = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
 
 static bool autofocusLocked = false;
 static bool shaderButtonHeld = false;
+static bool zoomButtonHeld = false;
 
+static void loadShaderValues() {
+	std::ifstream shaderFile("shaderValues.txt");
+	std::string text;
+
+	getline (shaderFile, text);
+	contrastA = std::stof(text);
+	
+	getline (shaderFile, text);
+	contrastB = std::stof(text);
+	
+	getline (shaderFile, text);
+	contrastC = std::stof(text);
+	
+	getline (shaderFile, text);
+	contrast = std::stof(text);
+
+	std::cout << "Loaded Shader Values: A=" << contrastA << " B=" << contrastB << " C=" << contrastC << " Contrast=" << contrast << std::endl;
+
+	shaderFile.close();
+}
+
+static void saveShaderValues() {
+	std::ofstream shaderFile("shaderValues.txt");
+	
+	shaderFile << std::to_string(contrastA);
+	shaderFile << "\n";
+	shaderFile << std::to_string(contrastB);
+	shaderFile << "\n";
+	shaderFile << std::to_string(contrastC);
+	shaderFile << "\n";
+	shaderFile << std::to_string(contrast);
+	shaderFile << "\n";
+	
+	shaderFile.close();
+}
 
 static float clamp(float num, float min, float max) {
 	if(num > max) return max;
@@ -113,18 +152,24 @@ static void shaderRotaryCallback(int newPos) {
    	int direction = pos - newPos;
 
 	if(shaderButtonHeld) {
-		if(direction > 0) {
-			contrastA += 0.1; 
+		if(app.getShaderIndex() == 0) {
+			if(direction > 0) {
+				contrast -= 0.03; 
+			} else {
+				contrast += 0.03; 
+			}
 		} else {
-			contrastA -= 0.1; 
+			if(direction > 0) {
+				contrastA += 0.03; 
+			} else {
+				contrastA -= 0.03; 
+			}
 		}
-		contrastC = clamp(contrastC, 0.0, 1.0);
-		contrastB = clamp(contrastB, 0.0, 1.0);
+		
 		contrastA = clamp(contrastA, contrastB+0.01, 1.0);
-
-		contrast = clamp(contrast, 0.0, 1.0);
-		std::cout << contrastA << " " <<  contrastB << " " << contrastC << std::endl;
+		contrast = clamp(contrast, 1.0, 4.0);
 		app.setShaderValues(contrastA, contrastB, contrastC, contrast);
+		saveShaderValues();
 	} else {
 		if(direction > 0) {
 			app.nextShader();
@@ -141,17 +186,25 @@ static void zoomRotaryCallback(int newPos) {
    	static int pos = 0;
    	int direction = pos - newPos;
    
-   	if(direction > 0) {
-		zoom += 0.01;
-   	} else {
-		zoom -= 0.01;
-    }
-
-	if(zoom < maxZoom) zoom = maxZoom;
-	if(zoom > 1) zoom = 1;
-	
-	setZoom();
-
+	if(zoomButtonHeld) {
+		if(direction > 0) {
+			contrastC += 0.03; 
+		} else {
+			contrastC -= 0.03; 
+		}
+		
+		contrastC = clamp(contrastC, -1.0, 0.5);
+		app.setShaderValues(contrastA, contrastB, contrastC, contrast);
+		saveShaderValues();
+	} else {
+		if(direction > 0) {
+			zoom += 0.01;
+		} else {
+			zoom -= 0.01;
+		}
+		zoom = clamp(zoom, maxZoom, 1.0);
+		setZoom();
+	}
 	pos = newPos;
 }
 
@@ -274,15 +327,22 @@ void buttonCallbacks() {
 
 	callback(pi, ENCODER1_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Up 1" << std::endl;
-		shaderButtonHeld = false;
 
 		if(getTimeDiff(lastShaderButtonPress) < 560 && !shaderButtonHeld) { 
 			app.swapOriginalAndActiveShader();
 		}
+		
+		shaderButtonHeld = false;
 	});
 
 	callback(pi, ENCODER2_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Up 2" << std::endl;
+
+		if(getTimeDiff(lastZoomButtonPress) < 560 && !zoomButtonHeld) { 
+			toggleAutofocus();
+		}
+		
+		zoomButtonHeld = false;
 	});
 
 	
@@ -294,7 +354,9 @@ void buttonCallbacks() {
 
 	callback(pi, ENCODER2_SW, FALLING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Down 2" << std::endl;
-		toggleAutofocus();
+		zoomButtonHeld = true;
+		lastZoomButtonPress = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+		
 	});
 }
 
@@ -322,6 +384,7 @@ int camera(int argc, char *argv[]) {
 char *optHost   = NULL;
 char *optPort   = NULL;
 int main(int argc, char *argv[]) {
+	loadShaderValues();
 	pi = pigpio_start(NULL, NULL); /* Connect to Pi. */
 	std::cout << "Starting GPIO | PI: " << pi << std::endl;
 

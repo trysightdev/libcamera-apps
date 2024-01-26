@@ -118,6 +118,10 @@ static void set_pipeline_configuration(Platform platform)
 	}
 }
 
+int RPiCamApp::getShaderIndex() {
+	return preview_->getShaderIndex();
+}
+
 RPiCamApp::RPiCamApp(std::unique_ptr<Options> opts)
 	: options_(std::move(opts)), controls_(controls::controls), post_processor_(this)
 {

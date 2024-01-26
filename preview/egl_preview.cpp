@@ -126,6 +126,7 @@ public:
 	void swapOriginalAndActiveShader() override;
 	void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 1, float g = 1, float b = 1, float opacity = 1) override;
 	void setShaderValues(float a, float b, float c, float d);
+	int getShaderIndex();
 
 private:
 	struct Buffer
@@ -384,6 +385,9 @@ void EglPreview::setShaderValues(float a, float b, float c, float d) {
 	contrastB = b;
 	contrastC = c;
 	contrast = d;
+}
+int EglPreview::getShaderIndex() {
+	return shaderIndex;
 }
 
 void EglPreview::glRenderText(std::string text, float x, float y, float scale, float r, float g, float b, float opacity) {
