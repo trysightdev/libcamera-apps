@@ -118,6 +118,11 @@ static void set_pipeline_configuration(Platform platform)
 	}
 }
 
+void RPiCamApp::drawRect(float x, float y, float w, float h, float r, float g, float b, float opacity) {
+	return preview_->glRenderRect(x, y, w, h, r, g, b, opacity);
+}
+
+
 int RPiCamApp::getShaderIndex() {
 	return preview_->getShaderIndex();
 }

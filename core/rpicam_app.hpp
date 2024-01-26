@@ -148,6 +148,7 @@ public:
 	void SetTextDrawCallback(std::function<void()> func);
 	void setShaderValues(float a, float b, float c, float contrast);
 	int getShaderIndex();
+	void drawRect(float x, float y, float w, float h, float r, float g, float b, float opacity);
 
 	Msg Wait();
 	void PostMessage(MsgType &t, MsgPayload &p);

@@ -50,7 +50,7 @@ public:
 	virtual void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 255, float g = 255, float b = 255, float opacity = 1) {}
 	virtual void setShaderValues(float a, float b, float c, float d) {}
 	virtual int getShaderIndex() { return 0; }
-
+	virtual void glRenderRect(float x, float y, float w, float h, float r, float g, float b, float opacity) {}
 protected:
 	DoneCallback done_callback_;
 	Options const *options_;

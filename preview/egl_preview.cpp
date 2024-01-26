@@ -127,7 +127,7 @@ public:
 	void glRenderText(std::string = "", float x = 0, float y = 0, float scale = 1, float r = 1, float g = 1, float b = 1, float opacity = 1) override;
 	void setShaderValues(float a, float b, float c, float d);
 	int getShaderIndex();
-
+	void glRenderRect(float x, float y, float w, float h, float r, float g, float b, float opacity);
 private:
 	struct Buffer
 	{
@@ -219,12 +219,13 @@ static GLint link_program(GLint vs, GLint fs)
 
 static GLint vs_s;
 
+static GLint rectShader;
 static GLint textShader;
 static GLint textVertexShader;
 static GLint textFragmentShader;
 
 static GLuint VAO, VBO;
-static GLuint textVAO, textVBO;
+static GLuint textVAO, textVBO, rectVAO;
 
 static GLuint testImage;
 static GLuint testImage2;
@@ -378,6 +379,37 @@ static void gl_setup(int width, int height, int window_width, int window_height)
 	glUseProgram(textShader);
 	glGenVertexArrays(1, &textVAO);
 	loadFont();
+
+
+
+	char rectVertexShaderCode[256];
+	snprintf(rectVertexShaderCode, sizeof(vs),
+		"attribute vec4 vertex;\n"
+
+		"void main() {\n"
+		"	vec4 newPos;"
+		"	newPos = vec4(vertex.x / %d.0, vertex.y / %d.0, 0.0, 1.0);"
+		"	newPos = vec4((newPos.xy - 1.0), 0.0, 1.0);\n"
+		"	newPos.y *= -1.0;"
+		"	gl_Position = newPos;\n"
+		"}\n", width, height);
+
+	std::string rectFragmentShaderCode = "#extension GL_OES_EGL_image_external : enable\n"
+		"precision mediump float;\n"
+		"uniform vec3 color;\n"
+		"uniform float opacity;\n"
+
+		"void main() {\n"    
+		"	gl_FragColor = vec4(color.xyz, opacity);\n"
+		"}\n"
+		"";
+		
+	GLint rectVertexShader = compile_shader(GL_VERTEX_SHADER, rectVertexShaderCode);
+	GLint rectFragmentShader = compile_shader(GL_FRAGMENT_SHADER, rectFragmentShaderCode.c_str());
+	rectShader = link_program(rectVertexShader, rectFragmentShader);
+
+	glUseProgram(rectShader);
+	glGenVertexArrays(1, &rectVAO);
 }
 
 void EglPreview::setShaderValues(float a, float b, float c, float d) {
@@ -431,6 +463,24 @@ void EglPreview::glRenderText(std::string text, float x, float y, float scale, f
     }
 	
 }
+
+
+void EglPreview::glRenderRect(float x, float y, float w, float h, float r, float g, float b, float opacity) {
+	glUseProgram(rectShader);
+	auto colorLocation = glGetUniformLocation(rectShader, "color");
+	auto opacityLocation = glGetUniformLocation(rectShader, "opacity");
+
+	glUniform1f(opacityLocation, opacity);
+	glUniform3f(colorLocation, r, g, b);
+
+    glBindVertexArray(rectVAO);
+	const float verts[] = { x,y+h,1,0,  x+w,y+h,1,1,  x+w,y,0,1,  x,y,0,0 };
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, verts);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+
 
 EglPreview::EglPreview(Options const *options) : Preview(options), last_fd_(-1), first_time_(true)
 {

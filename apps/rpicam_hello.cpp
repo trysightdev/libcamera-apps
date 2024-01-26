@@ -67,6 +67,10 @@ static bool autofocusLocked = false;
 static bool shaderButtonHeld = false;
 static bool zoomButtonHeld = false;
 
+//if the button is held and turned then these turn true
+static bool shaderCallbackActivated = false;
+static bool zoomCallbackActivated = false;
+
 static void loadShaderValues() {
 	std::ifstream shaderFile("shaderValues.txt");
 	std::string text;
@@ -152,6 +156,7 @@ static void shaderRotaryCallback(int newPos) {
    	int direction = pos - newPos;
 
 	if(shaderButtonHeld) {
+		shaderCallbackActivated = true;
 		if(app.getShaderIndex() == 0) {
 			if(direction > 0) {
 				contrast -= 0.03; 
@@ -187,6 +192,7 @@ static void zoomRotaryCallback(int newPos) {
    	int direction = pos - newPos;
    
 	if(zoomButtonHeld) {
+		zoomCallbackActivated = true;
 		if(direction > 0) {
 			contrastC += 0.03; 
 		} else {
@@ -225,6 +231,7 @@ static int drawCounter = 0;
 static float green[3] = {0.2, 1, 0.2};
 static float red[3] = {1, 0.2, 0.2};
 static void onDraw() {
+
 	const int shadowXOffset = 22;
 	const int shadowYOffset = 13;
 
@@ -247,6 +254,7 @@ static void onDraw() {
 			x += 40;
 		}
 
+
 		app.drawText(std::to_string((int)(getZoomLevel()*100)) + std::string("%"), x+shadowXOffset, 2450+shadowYOffset, 1, shadowR,shadowG,shadowB);
 		app.drawText(std::to_string((int)(getZoomLevel()*100)) + std::string("%"), x, 2450, 1, lerp(red[0], green[0], getZoomLevel()), lerp(red[1], green[1], getZoomLevel()), lerp(red[2], green[2], getZoomLevel()));
 	}
@@ -254,6 +262,9 @@ static void onDraw() {
 	if(getTimeDiff(lastAutofocusTextDraw) < 2000) {
 		//app.drawText(std::string("Autofocus ") + std::string(autofocusLocked ? "Disabled" : "Enabled"), 90+shadowXOffset, 350+shadowYOffset, 1, shadowR,shadowG,shadowB);
 		//app.drawText(std::string("Autofocus ") + std::string(autofocusLocked ? "Disabled" : "Enabled"), 90, 350, 1, textR,textG,textB);
+
+
+		app.drawRect(50,125,2300,265, 1.0,0.0,1.0,1.0);
 
 		app.drawText("Autofocus ", 90+shadowXOffset, 350+shadowYOffset, 1, shadowR,shadowG,shadowB);
 		app.drawText("Autofocus ", 90, 350, 1, textR,textG,textB);
@@ -328,21 +339,23 @@ void buttonCallbacks() {
 	callback(pi, ENCODER1_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
 		std::cout << "Button Up 1" << std::endl;
 
-		if(getTimeDiff(lastShaderButtonPress) < 560 && !shaderButtonHeld) { 
+		if(getTimeDiff(lastShaderButtonPress) < 560 && !shaderCallbackActivated) { 
 			app.swapOriginalAndActiveShader();
 		}
 		
 		shaderButtonHeld = false;
+		shaderCallbackActivated = false;
 	});
 
 	callback(pi, ENCODER2_SW, RISING_EDGE, [](int pi, unsigned gpio, unsigned level, uint32_t tick){
-		std::cout << "Button Up 2" << std::endl;
+		std::cout << "Button Up 2 " << getTimeDiff(lastZoomButtonPress) << " " << zoomCallbackActivated << std::endl;
 
-		if(getTimeDiff(lastZoomButtonPress) < 560 && !zoomButtonHeld) { 
+		if(getTimeDiff(lastZoomButtonPress) < 560 && !zoomCallbackActivated) { 
 			toggleAutofocus();
 		}
 		
 		zoomButtonHeld = false;
+		zoomCallbackActivated = false;
 	});
 
 	
